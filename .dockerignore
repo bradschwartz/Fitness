@@ -2,3 +2,4 @@ ecs.sh
 .DS_Store
 .idea/
 __pycache__/
+.git/
