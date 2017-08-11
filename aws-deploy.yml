@@ -1,0 +1,84 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: >-
+  AWS CloudFormation script for deploying a generic application to a new
+  cluster. Creates a new role, single task definition, and service. Expects
+  there to only be one image needed.
+
+#Parameters:
+#  ProjectCluster:
+#    Type: String
+#  ProjectLogGroup:
+#    Type: String
+#  ProjectFamily:
+#    Type: String
+#  ProjectImage:
+#    Type: String
+
+Resources:
+  ECSRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: [ecs.amazonaws.com]
+          Action: ['sts:AssumeRole']
+      Path: /
+
+#  ECSPolicy:
+#    Type: 'AWS::IAM::Policy'
+#    Properties:
+#      PolicyName: CFNUsers
+#      PolicyDocument:
+#        Statement:
+#          - Effect: Allow
+#            Action:
+#              - 'cloudformation:Describe*'
+#              - 'cloudformation:List*'
+#              - 'cloudformation:Get*'
+#            Resource: '*'
+#      Groups:
+#        - !Ref CFNUserGroup
+
+  ECSCluster:
+    Type: 'AWS::ECS::Cluster'
+    Properties:
+      ClusterName: 'SharedCluster' #!Ref ProjectCluster
+
+#  ECSSecurityGroup:
+#    Type: AWS::EC2::SecurityGroup
+#    Properties:
+#      GroupDescription: 'Attached security group'
+#  ECSSecurityGroupSSHinbound:
+#    Type: AWS::EC2::SecurityGroupIngress
+#    Properties:
+#      GroupId: !Ref 'ECSSecurityGroup'
+#      IpProtocol: tcp
+#      FromPort: '22'
+#      ToPort: '22'
+#      CidrIp: 0.0.0.0/0
+
+  ProjectLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: 'FitnessLogs' #!Ref ProjectLogGroup
+      RetentionInDays: 14
+
+  TaskDefinition:
+    Type: 'AWS::ECS::TaskDefinition'
+    Properties:
+      Family: 'Fitness' #!Ref ProjectFamily
+      ContainerDefinitions:
+        -
+          Name: 'fitness' #!Ref ProjectImage
+          Image: '896031365602.dkr.ecr.us-west-2.amazonaws.com/fitness:latest' #!Join [ '', ['896031365602.dkr.ecr.us-west-2.amazonaws.com/',!Ref ProjectImage, ':latest'] ]
+          Memory: 256
+
+  Service:
+    Type: 'AWS::ECS::Service'
+    Properties:
+      Cluster: !Ref ECSCluster
+      DesiredCount: 1
+#      Role: !Ref ECSRole
+      TaskDefinition: !Ref TaskDefinition
